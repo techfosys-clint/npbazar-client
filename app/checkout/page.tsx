@@ -16,8 +16,7 @@ import {
 } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/api';
 import { getCart, clearCart, subscribeCart, type CartItem } from '@/lib/cart';
-import { getUser, subscribeAuth, authFetch, type AuthUser } from '@/lib/auth';
-import { sendCheckoutOtp, verifyCheckoutOtp } from '@/lib/checkoutVerification';
+import { getUser, subscribeAuth, authFetch } from '@/lib/auth';
 import { trackBeginCheckout, trackPurchase } from '@/lib/dataLayer';
 
 interface Line {
@@ -39,19 +38,6 @@ export default function CheckoutPage() {
   const [placedOrder, setPlacedOrder] = useState<{ orderNumber: string; total: number } | null>(null);
 
   const [address, setAddress] = useState({ fullName: '', phone: '', addressLine: '', area: '', city: '' });
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-
-  // Phone verification — verifiedPhone tracks which exact number was OTP
-  // verified, so editing the phone field after verifying naturally requires
-  // re-verification without any manual reset logic.
-  const [verifiedPhone, setVerifiedPhone] = useState('');
-  const [verificationToken, setVerificationToken] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [verifyError, setVerifyError] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Coupon
   const [couponInput, setCouponInput] = useState('');
@@ -64,45 +50,6 @@ export default function CheckoutPage() {
   // Payment method — 'cod' or a connected gateway's key (e.g. 'sslcommerz').
   const [paymentGateways, setPaymentGateways] = useState<PaymentGatewayOption[]>([]);
   const [paymentMethod, setPaymentMethod] = useState('cod');
-
-  const phoneVerified = verifiedPhone !== '' && verifiedPhone === address.phone;
-  const needsVerification = !(loggedIn && currentUser?.isPhoneVerified && currentUser.mobile === address.phone);
-
-  const handleSendOtp = async () => {
-    setVerifyError('');
-    setSendingOtp(true);
-    try {
-      await sendCheckoutOtp(address.phone);
-      setOtpSent(true);
-      setResendCooldown(60);
-    } catch (err) {
-      setVerifyError((err as Error).message);
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [resendCooldown]);
-
-  const handleVerifyOtp = async () => {
-    setVerifyError('');
-    setVerifyingOtp(true);
-    try {
-      const res = await verifyCheckoutOtp(address.phone, otpCode);
-      setVerifiedPhone(address.phone);
-      setVerificationToken(res.token);
-      setOtpSent(false);
-      setOtpCode('');
-    } catch (err) {
-      setVerifyError((err as Error).message);
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
 
   useEffect(() => {
     fetchActivePaymentGateways().then(setPaymentGateways);
@@ -125,7 +72,6 @@ export default function CheckoutPage() {
     const syncAuth = () => {
       const user = getUser();
       setLoggedIn(!!user);
-      setCurrentUser(user);
       if (user) {
         setAddress((a) => ({
           ...a,
@@ -236,10 +182,6 @@ export default function CheckoutPage() {
       setError('All fields are required. Please fill out your complete shipping information.');
       return;
     }
-    if (needsVerification && !phoneVerified) {
-      setError('Please verify your phone number before placing the order.');
-      return;
-    }
     setPlacing(true);
     try {
       const isOnline = paymentMethod !== 'cod';
@@ -265,7 +207,6 @@ export default function CheckoutPage() {
             body: JSON.stringify({
               shippingAddress: address,
               ...paymentFields,
-              phoneVerificationToken: verificationToken,
               couponCode: appliedCoupon?.code,
             }),
           }
@@ -280,7 +221,6 @@ export default function CheckoutPage() {
             items: lines.map((l) => ({ productId: l.product._id, quantity: l.quantity })),
             shippingAddress: address,
             ...paymentFields,
-            phoneVerificationToken: verificationToken,
             couponCode: appliedCoupon?.code,
           }),
         });
@@ -413,55 +353,6 @@ export default function CheckoutPage() {
                   className={inputCls}
                   required
                 />
-
-                {needsVerification && !phoneVerified && (
-                  <div className="mt-2">
-                    {!otpSent ? (
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={sendingOtp || !address.phone}
-                        className="text-sm font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
-                      >
-                        {sendingOtp ? 'Sending code...' : 'Verify Phone Number'}
-                      </button>
-                    ) : (
-                      <div className="space-y-2 rounded-[4px] border border-zinc-200 bg-zinc-50 p-3">
-                        <p className="text-sm text-zinc-600">Enter the code sent to {address.phone}</p>
-                        <div className="flex gap-2">
-                          <input
-                            value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value)}
-                            placeholder="OTP code"
-                            className={inputCls}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleVerifyOtp}
-                            disabled={verifyingOtp || !otpCode}
-                            className="shrink-0 rounded-[4px] bg-[var(--btn-color)] px-4 text-sm font-semibold text-white transition hover:brightness-90 disabled:opacity-60"
-                          >
-                            {verifyingOtp ? 'Verifying...' : 'Verify'}
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleSendOtp}
-                          disabled={sendingOtp || resendCooldown > 0}
-                          className="text-xs font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
-                        >
-                          {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
-                        </button>
-                      </div>
-                    )}
-                    {verifyError && <p className="mt-1 text-xs text-red-600">{verifyError}</p>}
-                  </div>
-                )}
-                {needsVerification && phoneVerified && (
-                  <p className="mt-2 flex items-center gap-1.5 text-sm text-emerald-600">
-                    <FiCheckCircle size={14} /> Phone verified
-                  </p>
-                )}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-zinc-700">Address</label>

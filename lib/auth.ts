@@ -12,7 +12,6 @@ export interface AuthUser {
   mobile?: string;
   email?: string;
   address?: string;
-  isPhoneVerified: boolean;
 }
 
 export function getToken(): string | null {
@@ -67,11 +66,7 @@ export async function authFetch<T>(path: string, options: RequestInit = {}): Pro
     // Token no longer maps to a real account (e.g. admin deleted this
     // customer) — drop the stale local session so the UI reflects it.
     if (res.status === 401 && token) logout();
-    const err = new Error(data.message || `Request failed (${res.status})`) as Error & {
-      requiresVerification?: boolean;
-    };
-    err.requiresVerification = data.requiresVerification;
-    throw err;
+    throw new Error(data.message || `Request failed (${res.status})`);
   }
   return data as T;
 }
@@ -83,39 +78,20 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
-/**
- * Register with a mobile number — always goes through the OTP flow (no token
- * returned here; call apiVerifyOtp once the user enters the code).
- */
+/** Register a new account — active immediately, no verification step. */
 export async function apiRegister(body: {
   name: string;
   mobile: string;
-  email?: string;
+  email: string;
   password: string;
   address?: string;
 }) {
-  const data = await authFetch<{ success: boolean; message: string; userId?: string; token?: string; user?: AuthUser }>(
-    '/user/register',
-    { method: 'POST', body: JSON.stringify(body) }
-  );
-  if (data.token && data.user) saveSession(data.token, data.user);
-  return data;
-}
-
-export async function apiVerifyOtp(mobile: string, otp: string) {
-  const data = await authFetch<AuthResponse>('/user/verify-otp', {
+  const data = await authFetch<AuthResponse>('/user/register', {
     method: 'POST',
-    body: JSON.stringify({ mobile, otp }),
+    body: JSON.stringify(body),
   });
   saveSession(data.token, data.user);
   return data;
-}
-
-export async function apiResendOtp(mobile: string) {
-  return authFetch<{ success: boolean; message: string }>('/user/resend-otp', {
-    method: 'POST',
-    body: JSON.stringify({ mobile }),
-  });
 }
 
 /** Log in with a mobile number only. */
@@ -128,19 +104,19 @@ export async function apiLogin(mobile: string, password: string) {
   return data;
 }
 
-/** Request a password-reset OTP for a mobile number. */
-export async function apiForgotPassword(mobile: string) {
+/** Request a password-reset link by email. */
+export async function apiForgotPassword(email: string) {
   return authFetch<{ success: boolean; message: string }>('/user/forgot-password', {
     method: 'POST',
-    body: JSON.stringify({ mobile }),
+    body: JSON.stringify({ email }),
   });
 }
 
-/** Confirm the OTP and set a new password — signs the user in on success. */
-export async function apiResetPassword(mobile: string, otp: string, password: string) {
+/** Confirm the emailed reset token and set a new password — signs the user in on success. */
+export async function apiResetPassword(email: string, token: string, password: string) {
   const data = await authFetch<AuthResponse>('/user/reset-password', {
     method: 'POST',
-    body: JSON.stringify({ mobile, otp, password }),
+    body: JSON.stringify({ email, token, password }),
   });
   saveSession(data.token, data.user);
   return data;

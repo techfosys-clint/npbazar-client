@@ -9,8 +9,6 @@ import {
   logout,
   apiLogin,
   apiRegister,
-  apiVerifyOtp,
-  apiResendOtp,
   authFetch,
   type AuthUser,
 } from '@/lib/auth';
@@ -34,16 +32,13 @@ const BD_LOCAL_PATTERN = /^1[3-9]\d{8}$/;
 
 export default function AccountPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [mode, setMode] = useState<'login' | 'register' | 'verify'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
   const [login, setLogin] = useState({ mobile: '', password: '' });
   const [reg, setReg] = useState({ name: '', mobile: '', email: '', password: '', address: '' });
-  const [otp, setOtp] = useState('');
-  const [pendingMobile, setPendingMobile] = useState(''); // mobile awaiting OTP verify
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
@@ -63,12 +58,6 @@ export default function AccountPage() {
       .catch(() => {});
   }, [user]);
 
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [resendCooldown]);
-
   const switchMode = (next: 'login' | 'register') => {
     setMode(next);
     setError('');
@@ -81,14 +70,7 @@ export default function AccountPage() {
     try {
       await fn();
     } catch (err) {
-      const e = err as Error & { requiresVerification?: boolean };
-      if (e.requiresVerification) {
-        setPendingMobile(`+880${login.mobile}`);
-        setMode('verify');
-        setNotice('Your mobile is not verified yet — enter the OTP sent to it.');
-      } else {
-        setError(e.message);
-      }
+      setError((err as Error).message);
     } finally {
       setBusy(false);
     }
@@ -111,33 +93,16 @@ export default function AccountPage() {
       if (!BD_LOCAL_PATTERN.test(reg.mobile)) {
         throw new Error('Enter a valid 10-digit Bangladeshi mobile number after +880');
       }
-      const fullMobile = `+880${reg.mobile}`;
+      if (!reg.email.trim()) {
+        throw new Error('Email is required');
+      }
       await apiRegister({
         name: reg.name.trim(),
-        mobile: fullMobile,
-        email: reg.email.trim() || undefined,
+        mobile: `+880${reg.mobile}`,
+        email: reg.email.trim(),
         password: reg.password,
         address: reg.address.trim(),
       });
-      setPendingMobile(fullMobile);
-      setMode('verify');
-      setResendCooldown(60);
-      setNotice('Account created! Enter the OTP sent to your mobile to verify.');
-    });
-  };
-
-  const handleVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    run(async () => {
-      await apiVerifyOtp(pendingMobile, otp);
-    });
-  };
-
-  const handleResend = () => {
-    run(async () => {
-      await apiResendOtp(pendingMobile);
-      setResendCooldown(60);
-      setNotice('A new OTP has been sent to your mobile.');
     });
   };
 
@@ -285,28 +250,26 @@ export default function AccountPage() {
     );
   }
 
-  // ---------- Logged out: login / register / verify ----------
+  // ---------- Logged out: login / register ----------
   return (
     <div className="mx-auto w-full max-w-md flex-1 px-4 py-14">
       <div className="rounded-[8px] border border-zinc-200 bg-white p-8">
-        {mode !== 'verify' && (
-          <div className="mb-6 flex gap-2 rounded-[8px] border border-zinc-200 p-1.5">
-            <button
-              type="button"
-              onClick={() => switchMode('login')}
-              className={`flex-1 rounded-[8px] px-4 py-2 text-sm font-semibold transition ${mode === 'login' ? 'bg-[var(--primary)] text-white' : 'text-zinc-600 hover:bg-zinc-50'}`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode('register')}
-              className={`flex-1 rounded-[8px] px-4 py-2 text-sm font-semibold transition ${mode === 'register' ? 'bg-[var(--primary)] text-white' : 'text-zinc-600 hover:bg-zinc-50'}`}
-            >
-              Register
-            </button>
-          </div>
-        )}
+        <div className="mb-6 flex gap-2 rounded-[8px] border border-zinc-200 p-1.5">
+          <button
+            type="button"
+            onClick={() => switchMode('login')}
+            className={`flex-1 rounded-[8px] px-4 py-2 text-sm font-semibold transition ${mode === 'login' ? 'bg-[var(--primary)] text-white' : 'text-zinc-600 hover:bg-zinc-50'}`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('register')}
+            className={`flex-1 rounded-[8px] px-4 py-2 text-sm font-semibold transition ${mode === 'register' ? 'bg-[var(--primary)] text-white' : 'text-zinc-600 hover:bg-zinc-50'}`}
+          >
+            Register
+          </button>
+        </div>
 
         {notice && <p className="mb-4 rounded-[8px] bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
         {error && <p className="mb-4 rounded-[8px] bg-red-50 px-3 py-2 text-sm text-[var(--primary)]">{error}</p>}
@@ -386,14 +349,16 @@ export default function AccountPage() {
               <p className="mt-1 text-sm text-zinc-400">Bangladesh numbers only — enter the 10 digits after +880.</p>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-700">Email (optional)</label>
+              <label className="mb-1.5 block text-sm font-medium text-zinc-700">Email *</label>
               <input
                 type="email"
                 value={reg.email}
                 onChange={(e) => setReg({ ...reg, email: e.target.value })}
                 placeholder="you@example.com"
                 className={inputCls}
+                required
               />
+              <p className="mt-1 text-sm text-zinc-400">Used to recover your account if you forget your password.</p>
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-zinc-700">Address</label>
@@ -420,28 +385,8 @@ export default function AccountPage() {
                 </button>
               </div>
             </div>
-            <p className="text-sm text-zinc-400">An OTP will be sent to your mobile to verify your account.</p>
             <button type="submit" disabled={busy} className={btnCls}>
               {busy ? 'Creating account...' : 'Create Account'}
-            </button>
-          </form>
-        )}
-
-        {mode === 'verify' && (
-          <form onSubmit={handleVerify} className="space-y-3">
-            <h2 className="text-lg font-bold text-zinc-900">Verify your mobile</h2>
-            <p className="text-sm text-zinc-500">Enter the OTP sent to {pendingMobile}</p>
-            <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="OTP code" className={inputCls} required />
-            <button type="submit" disabled={busy} className={btnCls}>
-              {busy ? 'Verifying...' : 'Verify & Sign In'}
-            </button>
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={busy || resendCooldown > 0}
-              className="w-full text-sm font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
-            >
-              {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
             </button>
           </form>
         )}
