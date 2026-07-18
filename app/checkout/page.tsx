@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { FiCheckCircle, FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import {
   fetchProducts,
@@ -30,7 +29,6 @@ const inputCls =
   'w-full rounded-[4px] border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none transition focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]';
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
   const [lines, setLines] = useState<Line[]>([]);

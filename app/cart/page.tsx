@@ -2,20 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FiMinus, FiPlus, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import { FiMinus, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { fetchProducts, type Product } from '@/lib/api';
-import { API_BASE_URL } from '@/lib/api';
-import { getCart, setCartQuantity, removeFromCart, clearCart, subscribeCart, type CartItem } from '@/lib/cart';
-import { getUser, subscribeAuth, authFetch } from '@/lib/auth';
+import { getCart, setCartQuantity, removeFromCart, subscribeCart, type CartItem } from '@/lib/cart';
+import { getUser, subscribeAuth } from '@/lib/auth';
 import { trackRemoveFromCart } from '@/lib/dataLayer';
 
 interface Line {
   product: Product;
   quantity: number;
 }
-
-const inputCls =
-  'w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-700 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10';
 
 export default function CartPage() {
   const [lines, setLines] = useState<Line[]>([]);

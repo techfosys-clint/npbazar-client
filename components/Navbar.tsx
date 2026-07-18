@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FiMenu, FiMapPin, FiChevronDown, FiPhone, FiMail } from 'react-icons/fi';
+import { FiMapPin, FiChevronDown, FiPhone, FiMail } from 'react-icons/fi';
 import { FaFacebookF, FaInstagram, FaYoutube, FaTwitter } from 'react-icons/fa';
 import { fetchCollections, fetchBrands, type Collection, type StoreSettings } from '@/lib/api';
 import SearchBar from '@/components/SearchBar';

@@ -1,4 +1,3 @@
-import ProductCard from '@/components/ProductCard';
 import ShopFilters from '@/components/ShopFilters';
 import InfiniteProductGrid from '@/components/InfiniteProductGrid';
 import { fetchProducts, fetchCollections, fetchBrands, type FetchProductsParams } from '@/lib/api';
