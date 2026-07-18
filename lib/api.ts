@@ -72,6 +72,7 @@ export async function fetchCollectionBySlug(slug: string): Promise<Collection | 
 export interface StoreSettings {
   storeName: string;
   logo?: string;
+  favicon?: string;
   email?: string;
   phone?: string;
   address?: string;

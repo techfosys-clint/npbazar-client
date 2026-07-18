@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
@@ -22,8 +22,15 @@ export default function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const fullMobile = `+880${mobileDigits}`;
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
 
   const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +44,7 @@ export default function ForgotPasswordPage() {
       await apiForgotPassword(fullMobile);
       setNotice(`An OTP has been sent to ${fullMobile}.`);
       setStep('reset');
+      setResendCooldown(60);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -72,6 +80,7 @@ export default function ForgotPasswordPage() {
     try {
       await apiForgotPassword(fullMobile);
       setNotice('A new OTP has been sent.');
+      setResendCooldown(60);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -176,8 +185,13 @@ export default function ForgotPasswordPage() {
             <button type="submit" disabled={busy} className={btnCls}>
               {busy ? 'Resetting...' : 'Reset Password'}
             </button>
-            <button type="button" onClick={handleResend} disabled={busy} className="w-full text-sm font-medium text-[var(--primary)] hover:underline">
-              Resend OTP
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={busy || resendCooldown > 0}
+              className="w-full text-sm font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
+            >
+              {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
             </button>
           </form>
         )}

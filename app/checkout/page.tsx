@@ -51,6 +51,7 @@ export default function CheckoutPage() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [verifyError, setVerifyError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Coupon
   const [couponInput, setCouponInput] = useState('');
@@ -73,12 +74,19 @@ export default function CheckoutPage() {
     try {
       await sendCheckoutOtp(address.phone);
       setOtpSent(true);
+      setResendCooldown(60);
     } catch (err) {
       setVerifyError((err as Error).message);
     } finally {
       setSendingOtp(false);
     }
   };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
 
   const handleVerifyOtp = async () => {
     setVerifyError('');
@@ -439,10 +447,10 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           onClick={handleSendOtp}
-                          disabled={sendingOtp}
+                          disabled={sendingOtp || resendCooldown > 0}
                           className="text-xs font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
                         >
-                          Resend OTP
+                          {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
                         </button>
                       </div>
                     )}

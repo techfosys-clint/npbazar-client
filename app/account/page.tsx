@@ -43,6 +43,7 @@ export default function AccountPage() {
   const [reg, setReg] = useState({ name: '', mobile: '', email: '', password: '', address: '' });
   const [otp, setOtp] = useState('');
   const [pendingMobile, setPendingMobile] = useState(''); // mobile awaiting OTP verify
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
@@ -61,6 +62,12 @@ export default function AccountPage() {
       .then((d) => setOrders(d.orders))
       .catch(() => {});
   }, [user]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
 
   const switchMode = (next: 'login' | 'register') => {
     setMode(next);
@@ -114,6 +121,7 @@ export default function AccountPage() {
       });
       setPendingMobile(fullMobile);
       setMode('verify');
+      setResendCooldown(60);
       setNotice('Account created! Enter the OTP sent to your mobile to verify.');
     });
   };
@@ -128,6 +136,7 @@ export default function AccountPage() {
   const handleResend = () => {
     run(async () => {
       await apiResendOtp(pendingMobile);
+      setResendCooldown(60);
       setNotice('A new OTP has been sent to your mobile.');
     });
   };
@@ -426,8 +435,13 @@ export default function AccountPage() {
             <button type="submit" disabled={busy} className={btnCls}>
               {busy ? 'Verifying...' : 'Verify & Sign In'}
             </button>
-            <button type="button" onClick={handleResend} disabled={busy} className="w-full text-sm font-medium text-[var(--primary)] hover:underline">
-              Resend OTP
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={busy || resendCooldown > 0}
+              className="w-full text-sm font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
+            >
+              {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
             </button>
           </form>
         )}

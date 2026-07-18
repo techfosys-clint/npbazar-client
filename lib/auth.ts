@@ -64,6 +64,9 @@ export async function authFetch<T>(path: string, options: RequestInit = {}): Pro
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.success === false) {
+    // Token no longer maps to a real account (e.g. admin deleted this
+    // customer) — drop the stale local session so the UI reflects it.
+    if (res.status === 401 && token) logout();
     const err = new Error(data.message || `Request failed (${res.status})`) as Error & {
       requiresVerification?: boolean;
     };
