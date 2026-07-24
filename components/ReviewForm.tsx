@@ -1,20 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { FiStar } from 'react-icons/fi';
+import { getUser, subscribeAuth, authFetch, type AuthUser } from '@/lib/auth';
 
-// The review API requires a signed-in customer who has purchased the product
-// (server/controllers/reviewController.js). The storefront has no customer
-// login yet, so this form can't actually submit — it just explains that.
-export default function ReviewForm() {
+interface Props {
+  productId: string;
+}
+
+export default function ReviewForm({ productId }: Props) {
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  const submit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const sync = () => setUser(getUser());
+    sync();
+    return subscribeAuth(sync);
+  }, []);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('Please sign in to submit a review.');
+    setError('');
+    setMessage('');
+
+    if (!user) {
+      setError('Please sign in to submit a review.');
+      return;
+    }
+    if (!rating) {
+      setError('Please select a star rating.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await authFetch(`/products/${productId}/reviews`, {
+        method: 'POST',
+        body: JSON.stringify({ rating, comment }),
+      });
+      setMessage('Thanks! Your review has been submitted.');
+      setRating(0);
+      setComment('');
+      router.refresh(); // re-fetch the product's reviews/rating shown on this page
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -28,7 +68,8 @@ export default function ReviewForm() {
         onChange={(e) => setComment(e.target.value)}
         placeholder="Write Your Review Here..."
         rows={4}
-        className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-700 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10"
+        disabled={!user || submitting}
+        className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-700 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 disabled:bg-zinc-50"
       />
 
       <label className="mb-1.5 mt-4 block text-sm font-medium text-zinc-700">Your Rating:</label>
@@ -37,24 +78,37 @@ export default function ReviewForm() {
           <button
             key={star}
             type="button"
+            disabled={!user || submitting}
             onClick={() => setRating(star)}
             onMouseEnter={() => setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
             aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
-            className="p-0.5"
+            className="p-0.5 disabled:cursor-not-allowed"
           >
             <FiStar size={22} className={star <= (hoverRating || rating) ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'} />
           </button>
         ))}
       </div>
 
-      {message && <p className="mt-3 text-sm text-[var(--primary)]">{message}</p>}
+      {error && (
+        <p className="mt-3 text-sm text-[var(--primary)]">
+          {error}
+          {!user && (
+            <>
+              {' '}
+              <Link href="/account" className="font-semibold underline">Sign in</Link>
+            </>
+          )}
+        </p>
+      )}
+      {message && <p className="mt-3 text-sm text-emerald-600">{message}</p>}
 
       <button
         type="submit"
-        className="mt-4 rounded-[8px] bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+        disabled={submitting}
+        className="mt-4 rounded-[8px] bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
       >
-        Submit Review
+        {submitting ? 'Submitting...' : 'Submit Review'}
       </button>
     </form>
   );

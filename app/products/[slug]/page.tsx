@@ -116,7 +116,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[360px_1fr]">
         <RatingBreakdown rating={product.rating || 0} reviews={reviews} />
-        <ReviewForm />
+        <ReviewForm productId={product._id} />
       </div>
 
       {related.length > 0 && (
