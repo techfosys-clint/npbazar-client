@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import TrackingHeadInjector from "@/components/TrackingHeadInjector";
+import ChunkErrorHandler from "@/components/ChunkErrorHandler";
 import { fetchSettings } from "@/lib/api";
 import "./globals.css";
 
@@ -58,6 +59,7 @@ export default async function RootLayout({
       }
     >
       <body className="min-h-full flex flex-col pb-16 lg:pb-0">
+        <ChunkErrorHandler />
         {/* GTM noscript fallback must be the first element inside <body>. */}
         {tc?.gtmContainerId && (
           <noscript>
