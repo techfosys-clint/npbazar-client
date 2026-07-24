@@ -102,7 +102,7 @@ export default async function ContactPage() {
           {settings.contactUs ? (
             <div 
               className="prose prose-sm prose-zinc"
-              dangerouslySetInnerHTML={{ __html: settings.contactUs.replace(/\n/g, '<br />') }}
+              dangerouslySetInnerHTML={{ __html: settings.contactUs }}
             />
           ) : (
              <p className="text-sm text-zinc-500 mb-6">

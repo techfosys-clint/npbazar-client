@@ -20,7 +20,7 @@ export default async function RefundPolicyPage() {
       {settings.refundPolicy ? (
         <div 
           className="prose prose-zinc max-w-none bg-white p-8 rounded-2xl shadow-sm border border-zinc-100"
-          dangerouslySetInnerHTML={{ __html: settings.refundPolicy.replace(/\n/g, '<br />') }}
+          dangerouslySetInnerHTML={{ __html: settings.refundPolicy }}
         />
       ) : (
         <div className="bg-white p-12 text-center rounded-2xl shadow-sm border border-zinc-100">
