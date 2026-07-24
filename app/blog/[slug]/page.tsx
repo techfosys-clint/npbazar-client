@@ -1,10 +1,24 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import BlogPostCard from '@/components/BlogPostCard';
-import { fetchBlogPostBySlug, fetchBlogPosts } from '@/lib/api';
+import { fetchBlogPostBySlug, fetchBlogPosts, fetchSettings } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const [post, settings] = await Promise.all([fetchBlogPostBySlug(slug), fetchSettings()]);
+  if (!post) return {};
+  return buildMetadata({
+    title: post.seoTitle || post.title,
+    description: post.seoDescription || post.excerpt,
+    image: post.image,
+    settings,
+  });
 }
 
 function formatDate(iso: string): string {

@@ -11,6 +11,8 @@ export interface Collection {
   image?: string;
   isActive: boolean;
   parent?: { _id: string; name: string; slug: string } | string | null;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface ShippingZone {
@@ -104,6 +106,14 @@ export interface StoreSettings {
   contactUs?: string;
   privacyPolicy?: string;
   refundPolicy?: string;
+  /** Site-wide SEO/social-share defaults, plus per-static-page overrides. */
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    /** Social share (Open Graph/Twitter) image — falls back to `logo` when empty. */
+    ogImage?: string;
+    pages?: Partial<Record<'home' | 'about' | 'contact' | 'privacyPolicy' | 'refundPolicy', { title?: string; description?: string }>>;
+  };
 }
 
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -299,6 +309,8 @@ export interface ProductDetail extends Product {
   numReviews?: number;
   brand?: { _id: string; name: string; slug: string } | null;
   collections?: { _id: string; name: string; slug: string }[];
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export async function fetchProductBySlug(slug: string): Promise<ProductDetail | null> {
@@ -328,6 +340,8 @@ export interface BlogPost {
   author?: string;
   tags: string[];
   publishedAt: string;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface FetchBlogPostsParams {

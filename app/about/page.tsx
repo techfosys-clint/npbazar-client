@@ -1,9 +1,12 @@
 import { fetchSettings } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'About Us',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  const page = settings.seo?.pages?.about;
+  return buildMetadata({ title: page?.title || 'About Us', description: page?.description, settings });
+}
 
 export default async function AboutPage() {
   const settings = await fetchSettings();

@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import ProductCard from '@/components/ProductCard';
 import ShopFilters from '@/components/ShopFilters';
-import { fetchCollectionBySlug, fetchProducts, fetchCollections, fetchBrands, type FetchProductsParams } from '@/lib/api';
+import { fetchCollectionBySlug, fetchProducts, fetchCollections, fetchBrands, fetchSettings, type FetchProductsParams } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -15,6 +17,18 @@ interface Props {
 }
 
 const SORT_VALUES = ['newest', 'price_asc', 'price_desc', 'popular', 'rating'];
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const [collection, settings] = await Promise.all([fetchCollectionBySlug(slug), fetchSettings()]);
+  if (!collection) return {};
+  return buildMetadata({
+    title: collection.seoTitle || collection.name,
+    description: collection.seoDescription,
+    image: collection.image,
+    settings,
+  });
+}
 
 export default async function CollectionPage({ params, searchParams }: Props) {
   const { slug } = await params;

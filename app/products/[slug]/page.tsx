@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import ProductGallery from '@/components/ProductGallery';
 import ProductActions from '@/components/ProductActions';
 import ProductTabs from '@/components/ProductTabs';
@@ -10,9 +11,22 @@ import RatingBreakdown from '@/components/RatingBreakdown';
 import ReviewForm from '@/components/ReviewForm';
 import ProductCard from '@/components/ProductCard';
 import { fetchProductBySlug, fetchProductReviews, fetchProducts, fetchBrandBySlug, fetchSettings } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const [product, settings] = await Promise.all([fetchProductBySlug(slug), fetchSettings()]);
+  if (!product) return {};
+  return buildMetadata({
+    title: product.seoTitle || product.name,
+    description: product.seoDescription || product.shortDescription,
+    image: product.thumbnail,
+    settings,
+  });
 }
 
 export default async function ProductDetailPage({ params }: Props) {

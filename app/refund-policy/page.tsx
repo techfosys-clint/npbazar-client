@@ -1,9 +1,12 @@
 import { fetchSettings } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Refund Policy',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  const page = settings.seo?.pages?.refundPolicy;
+  return buildMetadata({ title: page?.title || 'Refund Policy', description: page?.description, settings });
+}
 
 export default async function RefundPolicyPage() {
   const settings = await fetchSettings();

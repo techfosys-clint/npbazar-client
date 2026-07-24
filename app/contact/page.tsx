@@ -1,11 +1,14 @@
 import { fetchSettings } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 import { FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
 import { FaFacebookF, FaInstagram, FaYoutube, FaTwitter } from 'react-icons/fa';
 
-export const metadata: Metadata = {
-  title: 'Contact Us',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  const page = settings.seo?.pages?.contact;
+  return buildMetadata({ title: page?.title || 'Contact Us', description: page?.description, settings });
+}
 
 export default async function ContactPage() {
   const settings = await fetchSettings();

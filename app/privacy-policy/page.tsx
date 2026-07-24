@@ -1,9 +1,12 @@
 import { fetchSettings } from '@/lib/api';
+import { buildMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  const page = settings.seo?.pages?.privacyPolicy;
+  return buildMetadata({ title: page?.title || 'Privacy Policy', description: page?.description, settings });
+}
 
 export default async function PrivacyPolicyPage() {
   const settings = await fetchSettings();
