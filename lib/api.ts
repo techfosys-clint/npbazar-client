@@ -429,10 +429,18 @@ export interface CouponValidateItem {
   variant?: Record<string, string>;
 }
 
+export interface CouponFreeGift {
+  productId: string;
+  name: string;
+  thumbnail?: string;
+  quantity: number;
+}
+
 export interface CouponValidateResult {
   coupon: { code: string; discountType: string };
   discount: number;
   freeShipping: boolean;
+  freeGift: CouponFreeGift | null;
   total: number;
 }
 
@@ -448,7 +456,13 @@ export async function validateCoupon(code: string, items: CouponValidateItem[]):
   if (!res.ok || !data.success) {
     throw new Error(data.message || 'Could not apply coupon');
   }
-  return { coupon: data.coupon, discount: data.discount, freeShipping: data.freeShipping, total: data.total };
+  return {
+    coupon: data.coupon,
+    discount: data.discount,
+    freeShipping: data.freeShipping,
+    freeGift: data.freeGift || null,
+    total: data.total,
+  };
 }
 
 export interface PaymentGatewayOption {

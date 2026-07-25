@@ -13,6 +13,7 @@ import {
   type StoreSettings,
   type ShippingZone,
   type PaymentGatewayOption,
+  type CouponFreeGift,
 } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/api';
 import { getCart, clearCart, subscribeCart, type CartItem } from '@/lib/cart';
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string } | null>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [freeShipping, setFreeShipping] = useState(false);
+  const [freeGift, setFreeGift] = useState<CouponFreeGift | null>(null);
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
@@ -158,11 +160,13 @@ export default function CheckoutPage() {
       setAppliedCoupon(result.coupon);
       setCouponDiscount(result.discount);
       setFreeShipping(result.freeShipping);
+      setFreeGift(result.freeGift);
     } catch (err) {
       setCouponError((err as Error).message);
       setAppliedCoupon(null);
       setCouponDiscount(0);
       setFreeShipping(false);
+      setFreeGift(null);
     } finally {
       setApplyingCoupon(false);
     }
@@ -172,6 +176,7 @@ export default function CheckoutPage() {
     setAppliedCoupon(null);
     setCouponDiscount(0);
     setFreeShipping(false);
+    setFreeGift(null);
     setCouponInput('');
     setCouponError('');
   };
@@ -516,11 +521,25 @@ export default function CheckoutPage() {
 
           <div className="mt-6 border-t border-zinc-300 pt-6">
             {appliedCoupon ? (
-              <div className="flex items-center justify-between rounded-[4px] border border-emerald-200 bg-emerald-50 px-3 py-2">
-                <span className="text-sm font-medium text-emerald-700">Coupon &quot;{appliedCoupon.code}&quot; applied</span>
-                <button type="button" onClick={handleRemoveCoupon} className="text-xs font-medium text-emerald-700 hover:underline">
-                  Remove
-                </button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-[4px] border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <span className="text-sm font-medium text-emerald-700">Coupon &quot;{appliedCoupon.code}&quot; applied</span>
+                  <button type="button" onClick={handleRemoveCoupon} className="text-xs font-medium text-emerald-700 hover:underline">
+                    Remove
+                  </button>
+                </div>
+                {freeGift && (
+                  <div className="flex items-center gap-3 rounded-[4px] border border-amber-200 bg-amber-50 px-3 py-2">
+                    {freeGift.thumbnail && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={freeGift.thumbnail} alt={freeGift.name} className="h-10 w-10 shrink-0 rounded-[4px] object-cover" />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-zinc-900">{freeGift.name}</p>
+                      <p className="text-xs text-amber-700">Free gift × {freeGift.quantity} — added to your order automatically</p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div>
