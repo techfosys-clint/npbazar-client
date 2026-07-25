@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiCheckCircle, FiClock, FiLoader } from 'react-icons/fi';
+import { FiSearch, FiCheckCircle, FiClock } from 'react-icons/fi';
 import { API_BASE_URL } from '@/lib/api';
+import Spinner from '@/components/Spinner';
 
 interface TrackedOrder {
   orderNumber: string;
@@ -76,7 +77,7 @@ export default function TrackOrderPage() {
           disabled={busy}
           className="flex shrink-0 items-center justify-center gap-2 rounded-[8px] bg-[var(--btn-color)] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-90 disabled:opacity-60"
         >
-          {busy ? <FiLoader size={15} className="animate-spin" /> : <FiSearch size={15} />}
+          {busy ? <Spinner size={15} /> : <FiSearch size={15} />}
           {busy ? 'Searching...' : 'Track'}
         </button>
       </form>

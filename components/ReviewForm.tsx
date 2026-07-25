@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiStar } from 'react-icons/fi';
 import { getUser, subscribeAuth, authFetch, type AuthUser } from '@/lib/auth';
+import Spinner from '@/components/Spinner';
 
 interface Props {
   productId: string;
@@ -106,8 +107,9 @@ export default function ReviewForm({ productId }: Props) {
       <button
         type="submit"
         disabled={submitting}
-        className="mt-4 rounded-[8px] bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+        className="mt-4 flex items-center justify-center gap-2 rounded-[8px] bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
       >
+        {submitting && <Spinner size={16} />}
         {submitting ? 'Submitting...' : 'Submit Review'}
       </button>
     </form>

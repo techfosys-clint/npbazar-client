@@ -18,6 +18,7 @@ import { API_BASE_URL } from '@/lib/api';
 import { getCart, clearCart, subscribeCart, type CartItem } from '@/lib/cart';
 import { getUser, subscribeAuth, authFetch } from '@/lib/auth';
 import { trackBeginCheckout, trackPurchase } from '@/lib/dataLayer';
+import Spinner from '@/components/Spinner';
 
 interface Line {
   product: Product;
@@ -461,8 +462,9 @@ export default function CheckoutPage() {
             <button
               type="submit"
               disabled={placing}
-              className="w-full rounded-[4px] bg-[var(--btn-color)] px-6 py-4 text-sm font-bold text-white transition hover:brightness-90 disabled:opacity-60 sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-[4px] bg-[var(--btn-color)] px-6 py-4 text-sm font-bold text-white transition hover:brightness-90 disabled:opacity-60 sm:w-auto"
             >
+              {placing && <Spinner size={16} />}
               {placing ? 'Processing...' : 'Complete order'}
             </button>
           </div>
@@ -533,8 +535,9 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={handleApplyCoupon}
                     disabled={applyingCoupon || !couponInput.trim()}
-                    className="shrink-0 rounded-[4px] border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-60"
+                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-[4px] border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-60"
                   >
+                    {applyingCoupon && <Spinner size={14} />}
                     {applyingCoupon ? 'Applying...' : 'Apply'}
                   </button>
                 </div>

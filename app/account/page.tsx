@@ -12,6 +12,7 @@ import {
   authFetch,
   type AuthUser,
 } from '@/lib/auth';
+import Spinner from '@/components/Spinner';
 
 interface MyOrder {
   _id: string;
@@ -25,7 +26,7 @@ interface MyOrder {
 const inputCls =
   'w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-700 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10';
 const btnCls =
-  'w-full rounded-[8px] bg-[var(--btn-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-90 disabled:opacity-60';
+  'w-full flex items-center justify-center gap-2 rounded-[8px] bg-[var(--btn-color)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-90 disabled:opacity-60';
 
 // BD mobile: 10 digits after +880, starting 1[3-9] (013.../019...).
 const BD_LOCAL_PATTERN = /^1[3-9]\d{8}$/;
@@ -319,6 +320,7 @@ export default function AccountPage() {
               </div>
             </div>
             <button type="submit" disabled={busy} className={btnCls}>
+              {busy && <Spinner size={16} />}
               {busy ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
@@ -386,6 +388,7 @@ export default function AccountPage() {
               </div>
             </div>
             <button type="submit" disabled={busy} className={btnCls}>
+              {busy && <Spinner size={16} />}
               {busy ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
