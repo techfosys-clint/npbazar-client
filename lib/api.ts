@@ -436,11 +436,19 @@ export interface CouponFreeGift {
   quantity: number;
 }
 
+export interface CouponDiscountedLine {
+  productId: string;
+  quantity: number;
+  free: boolean;
+}
+
 export interface CouponValidateResult {
   coupon: { code: string; discountType: string };
   discount: number;
   freeShipping: boolean;
   freeGift: CouponFreeGift | null;
+  /** Already-in-cart product(s) the discount landed on — shows as "Free" on that line. */
+  discountedLines: CouponDiscountedLine[];
   total: number;
 }
 
@@ -461,6 +469,7 @@ export async function validateCoupon(code: string, items: CouponValidateItem[]):
     discount: data.discount,
     freeShipping: data.freeShipping,
     freeGift: data.freeGift || null,
+    discountedLines: data.discountedLines || [],
     total: data.total,
   };
 }

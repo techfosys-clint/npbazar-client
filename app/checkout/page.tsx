@@ -14,6 +14,7 @@ import {
   type ShippingZone,
   type PaymentGatewayOption,
   type CouponFreeGift,
+  type CouponDiscountedLine,
 } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/api';
 import { getCart, clearCart, subscribeCart, type CartItem } from '@/lib/cart';
@@ -47,6 +48,7 @@ export default function CheckoutPage() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [freeShipping, setFreeShipping] = useState(false);
   const [freeGift, setFreeGift] = useState<CouponFreeGift | null>(null);
+  const [discountedLines, setDiscountedLines] = useState<CouponDiscountedLine[]>([]);
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
@@ -161,12 +163,14 @@ export default function CheckoutPage() {
       setCouponDiscount(result.discount);
       setFreeShipping(result.freeShipping);
       setFreeGift(result.freeGift);
+      setDiscountedLines(result.discountedLines);
     } catch (err) {
       setCouponError((err as Error).message);
       setAppliedCoupon(null);
       setCouponDiscount(0);
       setFreeShipping(false);
       setFreeGift(null);
+      setDiscountedLines([]);
     } finally {
       setApplyingCoupon(false);
     }
@@ -177,6 +181,7 @@ export default function CheckoutPage() {
     setCouponDiscount(0);
     setFreeShipping(false);
     setFreeGift(null);
+    setDiscountedLines([]);
     setCouponInput('');
     setCouponError('');
   };
@@ -496,27 +501,44 @@ export default function CheckoutPage() {
 
         <div className="mx-auto w-full max-w-md lg:max-w-none">
           <div className="space-y-4">
-            {lines.map((line) => (
-              <div key={line.product._id} className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[8px] border border-zinc-200 bg-white shadow-sm">
-                    {line.product.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={line.product.thumbnail} alt={line.product.name} className="h-full w-full object-cover" />
-                    ) : null}
+            {lines.map((line) => {
+              const freeEntry = discountedLines.find((d) => d.productId === line.product._id && d.free);
+              const freeQty = Math.min(freeEntry?.quantity || 0, line.quantity);
+              const paidQty = line.quantity - freeQty;
+
+              return (
+                <div key={line.product._id} className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[8px] border border-zinc-200 bg-white shadow-sm">
+                      {line.product.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={line.product.thumbnail} alt={line.product.name} className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                    <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600/90 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
+                      {line.quantity}
+                    </span>
                   </div>
-                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600/90 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
-                    {line.quantity}
-                  </span>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-zinc-900">{line.product.name}</h3>
+                    {freeQty > 0 && (
+                      <p className="text-xs font-medium text-emerald-600">
+                        {freeQty === line.quantity ? 'Free (coupon)' : `${freeQty} free (coupon)`}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-sm font-medium">
+                    {freeQty === line.quantity ? (
+                      <span className="text-emerald-600">Free</span>
+                    ) : freeQty > 0 ? (
+                      <span className="text-zinc-900">৳{(line.product.price * paidQty).toLocaleString()}</span>
+                    ) : (
+                      <span className="text-zinc-900">৳{(line.product.price * line.quantity).toLocaleString()}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-zinc-900">{line.product.name}</h3>
-                </div>
-                <div className="text-sm font-medium text-zinc-900">
-                  ৳{(line.product.price * line.quantity).toLocaleString()}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-6 border-t border-zinc-300 pt-6">

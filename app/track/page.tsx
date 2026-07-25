@@ -140,7 +140,9 @@ export default function TrackOrderPage() {
                     </p>
                   )}
                 </span>
-                <span className="font-semibold text-zinc-900">৳{(item.price * item.quantity).toLocaleString()}</span>
+                <span className={`font-semibold ${item.price === 0 ? 'text-emerald-600' : 'text-zinc-900'}`}>
+                  {item.price === 0 ? 'FREE' : `৳${(item.price * item.quantity).toLocaleString()}`}
+                </span>
               </div>
             ))}
           </div>

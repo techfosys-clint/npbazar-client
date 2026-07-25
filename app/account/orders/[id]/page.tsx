@@ -145,7 +145,9 @@ export default function OrderDetailsPage() {
                     <div className="ml-4 flex flex-1 flex-col">
                       <div className="flex justify-between text-base font-medium text-zinc-900">
                         <h3>{item.name}</h3>
-                        <p className="ml-4">৳{(item.price * item.quantity).toLocaleString()}</p>
+                        <p className={`ml-4 ${item.price === 0 ? 'text-emerald-600' : ''}`}>
+                          {item.price === 0 ? 'FREE' : `৳${(item.price * item.quantity).toLocaleString()}`}
+                        </p>
                       </div>
                       {item.variant && Object.keys(item.variant).length > 0 && (
                         <p className="mt-1 text-sm text-zinc-500">
