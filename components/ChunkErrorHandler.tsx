@@ -30,12 +30,23 @@ export default function ChunkErrorHandler() {
       const message = typeof reason === 'string' ? reason : reason?.message || '';
       if (isChunkError(message) || reason?.name === 'ChunkLoadError') reloadOnce();
     };
+    // Resource load failures (a <script>/<link> chunk that 404s or hits a
+    // network error like ERR_QUIC_PROTOCOL_ERROR) don't bubble and never reach
+    // `onError` above — they only fire in the capture phase.
+    const onResourceError = (event: Event) => {
+      const target = event.target as HTMLScriptElement | HTMLLinkElement | null;
+      if (!target || (target.tagName !== 'SCRIPT' && target.tagName !== 'LINK')) return;
+      const src = (target as HTMLScriptElement).src || (target as HTMLLinkElement).href || '';
+      if (src.includes('/_next/static/')) reloadOnce();
+    };
 
     window.addEventListener('error', onError);
     window.addEventListener('unhandledrejection', onRejection);
+    window.addEventListener('error', onResourceError, true);
     return () => {
       window.removeEventListener('error', onError);
       window.removeEventListener('unhandledrejection', onRejection);
+      window.removeEventListener('error', onResourceError, true);
     };
   }, []);
 
